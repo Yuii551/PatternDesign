@@ -10,6 +10,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
+#include "DrawDebugHelpers.h"
+#include "GameFramework/DamageType.h"
+#include "Kismet/GameplayStatics.h"
 
 APatternLabCharacter::APatternLabCharacter()
 {
@@ -116,6 +119,16 @@ void APatternLabCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 			&ACharacter::StopJumping
 		);
 	}
+
+	if (FireAction)
+	{
+		EnhancedInput->BindAction(
+			FireAction,
+			ETriggerEvent::Started,
+			this,
+			&APatternLabCharacter::Fire
+		);
+	}
 }
 
 void APatternLabCharacter::Move(const FInputActionValue& InputValue)
@@ -141,4 +154,67 @@ void APatternLabCharacter::Look(const FInputActionValue& InputValue)
 
 	AddControllerYawInput(LookInput.X);
 	AddControllerPitchInput(LookInput.Y);
+}
+
+void APatternLabCharacter::Fire()
+{
+	if (!FirstPersonCamera)
+	{
+		return;
+	}
+
+	const FVector TraceStart =
+		FirstPersonCamera->GetComponentLocation();
+
+	const FVector ShotDirection =
+		FirstPersonCamera->GetForwardVector();
+
+	const FVector TraceEnd =
+		TraceStart + ShotDirection * ShotDistance;
+
+	FCollisionQueryParams QueryParams(
+		SCENE_QUERY_STAT(PatternLabFire),
+		true,
+		this
+	);
+
+	FHitResult HitResult;
+
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		TraceStart,
+		TraceEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	const FVector DebugEnd = bHit
+		? HitResult.ImpactPoint
+		: TraceEnd;
+
+	DrawDebugLine(
+		GetWorld(),
+		TraceStart,
+		DebugEnd,
+		bHit ? FColor::Green : FColor::Red,
+		false,
+		1.0f,
+		0,
+		1.5f
+	);
+
+	if (!bHit || !HitResult.GetActor())
+	{
+		return;
+	}
+
+	UGameplayStatics::ApplyPointDamage(
+		HitResult.GetActor(),
+		DamagePerShot,
+		ShotDirection,
+		HitResult,
+		GetController(),
+		this,
+		UDamageType::StaticClass()
+	);
 }

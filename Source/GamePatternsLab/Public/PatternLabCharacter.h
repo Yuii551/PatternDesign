@@ -35,6 +35,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
 
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> FireAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	float ShotDistance = 5000.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	float DamagePerShot = 25.0f;
+
 	virtual void PawnClientRestart() override;
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -42,4 +52,5 @@ protected:
 private:
 	void Move(const FInputActionValue& InputValue);
 	void Look(const FInputActionValue& InputValue);
+	void Fire();
 };
