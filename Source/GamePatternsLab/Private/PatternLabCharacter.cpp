@@ -1,15 +1,18 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright © 2026 Yuii551. Licensed under the MIT License.
 
 
 #include "PatternLabCharacter.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "InputActionValue.h"
 
 APatternLabCharacter::APatternLabCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
 	GetCapsuleComponent()->InitCapsuleSize(42.0f, 96.0f);
@@ -28,12 +31,114 @@ APatternLabCharacter::APatternLabCharacter()
 	
 	FirstPersonCamera->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCamera->SetRelativeLocation(FVector(-10.0f, 0.0f, 64.0f));
+	FirstPersonCamera->bUsePawnControlRotation = true;
+}
+
+void APatternLabCharacter::PawnClientRestart()
+{
+	Super::PawnClientRestart();
+
+	const APlayerController* PlayerController =
+		Cast<APlayerController>(GetController());
+
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
+
+	if (!LocalPlayer)
+	{
+		return;
+	}
+
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
+		LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+
+	if (!InputSubsystem || !DefaultMappingContext)
+	{
+		return;
+	}
+
+	InputSubsystem->RemoveMappingContext(DefaultMappingContext);
+	InputSubsystem->AddMappingContext(DefaultMappingContext, 0);
 }
 
 void APatternLabCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	UEnhancedInputComponent* EnhancedInput =
+		Cast<UEnhancedInputComponent>(PlayerInputComponent);
+
+	if (!ensureMsgf(
+		EnhancedInput,
+		TEXT("PatternLabCharacter requires Enhanced Input.")
+	))
+	{
+		return;
+	}
+
+	if (MoveAction)
+	{
+		EnhancedInput->BindAction(
+			MoveAction,
+			ETriggerEvent::Triggered,
+			this,
+			&APatternLabCharacter::Move
+		);
+	}
+	
+	if (LookAction)
+	{
+		EnhancedInput->BindAction(
+			LookAction,
+			ETriggerEvent::Triggered,
+			this,
+			&APatternLabCharacter::Look
+		);
+	}
+
+	if (JumpAction)
+	{
+		EnhancedInput->BindAction(
+			JumpAction,
+			ETriggerEvent::Started,
+			this,
+			&ACharacter::Jump
+		);
+		
+		EnhancedInput->BindAction(
+			JumpAction,
+			ETriggerEvent::Completed,
+			this,
+			&ACharacter::StopJumping
+		);
+	}
 }
 
+void APatternLabCharacter::Move(const FInputActionValue& InputValue)
+{
+	const FVector2D Movement = InputValue.Get<FVector2D>();
 
+	const FRotator ControlRotation = GetControlRotation();
+	const FRotator YawRotation(0.0f, ControlRotation.Yaw, 0.0f);
 
+	const FVector Forward =
+		FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+
+	const FVector Right =
+		FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+	AddMovementInput(Forward, Movement.Y);
+	AddMovementInput(Right, Movement.X);
+}
+
+void APatternLabCharacter::Look(const FInputActionValue& InputValue)
+{
+	const FVector2D LookInput = InputValue.Get<FVector2D>();
+
+	AddControllerYawInput(LookInput.X);
+	AddControllerPitchInput(LookInput.Y);
+}
