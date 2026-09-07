@@ -1,0 +1,32 @@
+# Unreal generated folders
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# IDE-generated files
+.vs/
+.idea/
+*.sln
+*.slnx
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.sdf
+*.suo
+*.user
+
+# Plugin-generated folders
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+
+# Personal Unreal content
+Content/Developers/
+
+# Build/package output
+StagedBuilds/
+PackagedBuilds/
+
+# Logs and temporary files
+*.log
+*.tmp
