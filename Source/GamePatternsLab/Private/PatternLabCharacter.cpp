@@ -13,6 +13,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/DamageType.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/Engine.h"
 
 APatternLabCharacter::APatternLabCharacter()
 {
@@ -35,6 +36,9 @@ APatternLabCharacter::APatternLabCharacter()
 	FirstPersonCamera->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCamera->SetRelativeLocation(FVector(-10.0f, 0.0f, 64.0f));
 	FirstPersonCamera->bUsePawnControlRotation = true;
+
+	JumpButtonCommand = MakeUnique<FJumpCharacterCommand>();
+	FireButtonCommand = MakeUnique<FFireCharacterCommand>();
 }
 
 void APatternLabCharacter::PawnClientRestart()
@@ -109,7 +113,7 @@ void APatternLabCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 			JumpAction,
 			ETriggerEvent::Started,
 			this,
-			&ACharacter::Jump
+			&APatternLabCharacter::ExecuteJumpButtonCommand
 		);
 		
 		EnhancedInput->BindAction(
@@ -126,7 +130,24 @@ void APatternLabCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 			FireAction,
 			ETriggerEvent::Started,
 			this,
-			&APatternLabCharacter::Fire
+			&APatternLabCharacter::ExecuteFireButtonCommand
+		);
+
+		EnhancedInput->BindAction(
+			FireAction,
+			ETriggerEvent::Completed,
+			this,
+			&ACharacter::StopJumping
+		);
+	}
+
+	if (SwapCommandsAction)
+	{
+		EnhancedInput->BindAction(
+			SwapCommandsAction,
+			ETriggerEvent::Started,
+			this,
+			&APatternLabCharacter::SwapInputCommand
 		);
 	}
 }
@@ -156,7 +177,7 @@ void APatternLabCharacter::Look(const FInputActionValue& InputValue)
 	AddControllerPitchInput(LookInput.Y);
 }
 
-void APatternLabCharacter::Fire()
+void APatternLabCharacter::PerformFire()
 {
 	if (!FirstPersonCamera)
 	{
@@ -217,4 +238,36 @@ void APatternLabCharacter::Fire()
 		this,
 		UDamageType::StaticClass()
 	);
+}
+
+void APatternLabCharacter::ExecuteJumpButtonCommand()
+{
+	if (JumpButtonCommand)
+	{
+		JumpButtonCommand->Execute(*this);
+	}
+}
+
+void APatternLabCharacter::ExecuteFireButtonCommand()
+{
+	if (FireButtonCommand)
+	{
+		FireButtonCommand->Execute(*this);
+	}
+}
+
+void APatternLabCharacter::SwapInputCommand()
+{
+	Swap(JumpButtonCommand, FireButtonCommand);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			2.0f,
+			FColor::Yellow,
+			TEXT("Space and left mouse commands swapped.")
+		);
+	}
+
 }

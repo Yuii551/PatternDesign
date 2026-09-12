@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CharacterCommand.h"
 #include "GameFramework/Character.h"
 #include "PatternLabCharacter.generated.h"
 
@@ -18,6 +19,8 @@ class GAMEPATTERNSLAB_API APatternLabCharacter : public ACharacter
 
 public:
 	APatternLabCharacter();
+
+	void PerformFire();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -35,7 +38,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
 
-	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> FireAction;
 
@@ -45,6 +47,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	float DamagePerShot = 25.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UInputAction> SwapCommandsAction;
+
 	virtual void PawnClientRestart() override;
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -52,5 +57,11 @@ protected:
 private:
 	void Move(const FInputActionValue& InputValue);
 	void Look(const FInputActionValue& InputValue);
-	void Fire();
+
+	TUniquePtr<FCharacterCommand> JumpButtonCommand;
+	TUniquePtr<FCharacterCommand> FireButtonCommand;
+
+	void ExecuteJumpButtonCommand();
+	void ExecuteFireButtonCommand();
+	void SwapInputCommand();
 };
