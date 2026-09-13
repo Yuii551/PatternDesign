@@ -5,12 +5,22 @@
 #include "CoreMinimal.h"
 #include "CharacterCommand.h"
 #include "GameFramework/Character.h"
+#include "TimerManager.h"
 #include "PatternLabCharacter.generated.h"
 
 class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
+
+UENUM(BlueprintType)
+enum class ENaiveWeaponState : uint8
+{
+	Ready,
+	Cooldown,
+	Empty
+	
+};
 
 UCLASS()
 class GAMEPATTERNSLAB_API APatternLabCharacter : public ACharacter
@@ -50,6 +60,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UInputAction> SwapCommandsAction;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> ReloadAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	int32 MagazineSize = 3;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon")
+	int32 CurrentAmmo = 3;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	float FireCooldown = 0.5f;
+
 	virtual void PawnClientRestart() override;
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -64,4 +86,12 @@ private:
 	void ExecuteJumpButtonCommand();
 	void ExecuteFireButtonCommand();
 	void SwapInputCommand();
+
+	ENaiveWeaponState WeaponState = ENaiveWeaponState::Ready;
+	FTimerHandle FireCooldownTimer;
+
+	void ReloadWeapon();
+	void FinishFireCooldown();
+
+	void FireShot();
 };

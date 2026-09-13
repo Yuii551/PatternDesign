@@ -150,6 +150,16 @@ void APatternLabCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 			&APatternLabCharacter::SwapInputCommand
 		);
 	}
+
+	if (ReloadAction)
+	{
+		EnhancedInput->BindAction(
+			ReloadAction,
+			ETriggerEvent::Started,
+			this,
+			&APatternLabCharacter::ReloadWeapon
+		);
+	}
 }
 
 void APatternLabCharacter::Move(const FInputActionValue& InputValue)
@@ -178,6 +188,75 @@ void APatternLabCharacter::Look(const FInputActionValue& InputValue)
 }
 
 void APatternLabCharacter::PerformFire()
+{
+	switch (WeaponState)
+	{
+	case ENaiveWeaponState::Ready:
+		break;
+
+	case ENaiveWeaponState::Cooldown:
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				1.0f,
+				FColor::Yellow,
+				TEXT("Weapon is cooling down.")
+			);
+		}
+		return;
+
+	case ENaiveWeaponState::Empty:
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				1.0f,
+				FColor::Red,
+				TEXT("Weapon is empty. Press R to reload.")
+			);
+		}
+		return;
+	}
+
+	FireShot();
+
+	CurrentAmmo--;
+
+	if (CurrentAmmo <= 0)
+	{
+		CurrentAmmo = 0;
+		WeaponState = ENaiveWeaponState::Empty;
+	}
+	else
+	{
+		WeaponState = ENaiveWeaponState::Cooldown;
+
+		GetWorldTimerManager().SetTimer(
+			FireCooldownTimer,
+			this,
+			&APatternLabCharacter::FinishFireCooldown,
+			FireCooldown,
+			false
+		);
+	}
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			1.0f,
+			FColor::Cyan,
+			FString::Printf(
+				TEXT("Ammo: %d / %d"),
+				CurrentAmmo,
+				MagazineSize
+			)
+		);
+	}
+}
+
+void APatternLabCharacter::FireShot()
 {
 	if (!FirstPersonCamera)
 	{
@@ -270,4 +349,30 @@ void APatternLabCharacter::SwapInputCommand()
 		);
 	}
 
+}
+
+void APatternLabCharacter::ReloadWeapon()
+{
+	GetWorldTimerManager().ClearTimer(FireCooldownTimer);
+
+	CurrentAmmo = MagazineSize;
+	WeaponState = ENaiveWeaponState::Ready;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			1.0f,
+			FColor::Green,
+			TEXT("Weapon reloaded.")
+		);
+	}
+}
+
+void APatternLabCharacter::FinishFireCooldown()
+{
+	if (WeaponState == ENaiveWeaponState::Cooldown)
+	{
+		WeaponState = ENaiveWeaponState::Ready;
+	}
 }
