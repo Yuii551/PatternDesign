@@ -6,21 +6,13 @@
 #include "CharacterCommand.h"
 #include "GameFramework/Character.h"
 #include "TimerManager.h"
+#include "WeaponState.h"
 #include "PatternLabCharacter.generated.h"
 
 class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
-
-UENUM(BlueprintType)
-enum class ENaiveWeaponState : uint8
-{
-	Ready,
-	Cooldown,
-	Empty
-	
-};
 
 UCLASS()
 class GAMEPATTERNSLAB_API APatternLabCharacter : public ACharacter
@@ -87,7 +79,18 @@ private:
 	void ExecuteFireButtonCommand();
 	void SwapInputCommand();
 
-	ENaiveWeaponState WeaponState = ENaiveWeaponState::Ready;
+	FReadyWeaponState ReadyWeaponState;
+	FCooldownWeaponState CooldownWeaponState;
+	FEmptyWeaponState EmptyWeaponState;
+
+	FWeaponState* CurrentWeaponState = nullptr;
+
+	void RefillWeapon();
+
+	friend class FReadyWeaponState;
+	friend class FCooldownWeaponState;
+	friend class FEmptyWeaponState;
+
 	FTimerHandle FireCooldownTimer;
 
 	void ReloadWeapon();

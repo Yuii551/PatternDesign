@@ -39,6 +39,8 @@ APatternLabCharacter::APatternLabCharacter()
 
 	JumpButtonCommand = MakeUnique<FJumpCharacterCommand>();
 	FireButtonCommand = MakeUnique<FFireCharacterCommand>();
+
+	CurrentWeaponState = &ReadyWeaponState;
 }
 
 void APatternLabCharacter::PawnClientRestart()
@@ -189,70 +191,9 @@ void APatternLabCharacter::Look(const FInputActionValue& InputValue)
 
 void APatternLabCharacter::PerformFire()
 {
-	switch (WeaponState)
+	if (CurrentWeaponState)
 	{
-	case ENaiveWeaponState::Ready:
-		break;
-
-	case ENaiveWeaponState::Cooldown:
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				-1,
-				1.0f,
-				FColor::Yellow,
-				TEXT("Weapon is cooling down.")
-			);
-		}
-		return;
-
-	case ENaiveWeaponState::Empty:
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				-1,
-				1.0f,
-				FColor::Red,
-				TEXT("Weapon is empty. Press R to reload.")
-			);
-		}
-		return;
-	}
-
-	FireShot();
-
-	CurrentAmmo--;
-
-	if (CurrentAmmo <= 0)
-	{
-		CurrentAmmo = 0;
-		WeaponState = ENaiveWeaponState::Empty;
-	}
-	else
-	{
-		WeaponState = ENaiveWeaponState::Cooldown;
-
-		GetWorldTimerManager().SetTimer(
-			FireCooldownTimer,
-			this,
-			&APatternLabCharacter::FinishFireCooldown,
-			FireCooldown,
-			false
-		);
-	}
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			1.0f,
-			FColor::Cyan,
-			FString::Printf(
-				TEXT("Ammo: %d / %d"),
-				CurrentAmmo,
-				MagazineSize
-			)
-		);
+		CurrentWeaponState->Fire(*this);
 	}
 }
 
@@ -353,26 +294,34 @@ void APatternLabCharacter::SwapInputCommand()
 
 void APatternLabCharacter::ReloadWeapon()
 {
-	GetWorldTimerManager().ClearTimer(FireCooldownTimer);
-
-	CurrentAmmo = MagazineSize;
-	WeaponState = ENaiveWeaponState::Ready;
-
-	if (GEngine)
+	if (CurrentWeaponState)
 	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			1.0f,
-			FColor::Green,
-			TEXT("Weapon reloaded.")
-		);
+		CurrentWeaponState->Reload(*this);
 	}
 }
 
 void APatternLabCharacter::FinishFireCooldown()
 {
-	if (WeaponState == ENaiveWeaponState::Cooldown)
+	if (CurrentWeaponState)
 	{
-		WeaponState = ENaiveWeaponState::Ready;
+		CurrentWeaponState->FinishCooldown(*this);
+	}
+}
+
+void APatternLabCharacter::RefillWeapon()
+{
+	GetWorldTimerManager().ClearTimer(FireCooldownTimer);
+
+	CurrentAmmo = MagazineSize;
+	CurrentWeaponState = &ReadyWeaponState;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			2.0f,
+			FColor::Green,
+			TEXT("Weapon reloaded.")
+		);
 	}
 }
