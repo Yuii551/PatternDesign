@@ -308,10 +308,41 @@ void APatternLabCharacter::FinishFireCooldown()
 	}
 }
 
-void APatternLabCharacter::RefillWeapon()
+void APatternLabCharacter::BeginReload()
 {
 	GetWorldTimerManager().ClearTimer(FireCooldownTimer);
 
+	CurrentWeaponState = &ReloadingWeaponState;
+
+	GetWorldTimerManager().SetTimer(
+		ReloadTimer,
+		this,
+		&APatternLabCharacter::FinishReload,
+		ReloadDuration,
+		false
+	);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			ReloadDuration,
+			FColor::Yellow,
+			TEXT("Reloading...")
+		);
+	}
+}
+
+void APatternLabCharacter::FinishReload()
+{
+	if (CurrentWeaponState)
+	{
+		CurrentWeaponState->FinishReload(*this);
+	}
+}
+
+void APatternLabCharacter::CompleteReload()
+{
 	CurrentAmmo = MagazineSize;
 	CurrentWeaponState = &ReadyWeaponState;
 
@@ -321,7 +352,7 @@ void APatternLabCharacter::RefillWeapon()
 			-1,
 			2.0f,
 			FColor::Green,
-			TEXT("Weapon reloaded.")
+			TEXT("Reload complete.")
 		);
 	}
 }

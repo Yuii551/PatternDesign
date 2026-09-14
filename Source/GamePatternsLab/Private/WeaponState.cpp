@@ -60,12 +60,7 @@ void FReadyWeaponState::Fire(APatternLabCharacter& Character) const
 
 void FReadyWeaponState::Reload(APatternLabCharacter& Character) const
 {
-	Character.RefillWeapon();
-}
-
-void FReadyWeaponState::FinishCooldown(APatternLabCharacter& Character) const
-{
-	// no cooldown for ready state
+	Character.BeginReload();
 }
 
 void FCooldownWeaponState::Fire(APatternLabCharacter& Character) const
@@ -78,7 +73,7 @@ void FCooldownWeaponState::Fire(APatternLabCharacter& Character) const
 
 void FCooldownWeaponState::Reload(APatternLabCharacter& Character) const
 {
-	Character.RefillWeapon();
+	Character.BeginReload();
 }
 
 void FCooldownWeaponState::FinishCooldown(APatternLabCharacter& Character) const
@@ -97,10 +92,26 @@ void FEmptyWeaponState::Fire(APatternLabCharacter& Character) const
 
 void FEmptyWeaponState::Reload(APatternLabCharacter& Character) const
 {
-	Character.RefillWeapon();
+	Character.BeginReload();
 }
 
-void FEmptyWeaponState::FinishCooldown(APatternLabCharacter& Character) const
+void FReloadingWeaponState::Fire(APatternLabCharacter& Character) const
 {
-	// no cooldown for empty state
+	ShowMessage(
+		TEXT("Cannot fire while reloading."),
+		FColor::Yellow
+	);
+}
+
+void FReloadingWeaponState::Reload(APatternLabCharacter& Character) const
+{
+	ShowMessage(
+		TEXT("Already reloading."),
+		FColor::Yellow
+	);
+}
+
+void FReloadingWeaponState::FinishReload(APatternLabCharacter& Character) const
+{
+	Character.CompleteReload();
 }

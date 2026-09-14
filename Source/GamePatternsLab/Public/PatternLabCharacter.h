@@ -64,6 +64,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float FireCooldown = 0.5f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	float ReloadDuration = 1.5f;
+
 	virtual void PawnClientRestart() override;
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -82,16 +85,21 @@ private:
 	FReadyWeaponState ReadyWeaponState;
 	FCooldownWeaponState CooldownWeaponState;
 	FEmptyWeaponState EmptyWeaponState;
+	FReloadingWeaponState ReloadingWeaponState;
 
 	FWeaponState* CurrentWeaponState = nullptr;
 
-	void RefillWeapon();
+	void BeginReload();
+	void FinishReload();
+	void CompleteReload();
 
 	friend class FReadyWeaponState;
 	friend class FCooldownWeaponState;
 	friend class FEmptyWeaponState;
+	friend class FReloadingWeaponState;
 
 	FTimerHandle FireCooldownTimer;
+	FTimerHandle ReloadTimer;
 
 	void ReloadWeapon();
 	void FinishFireCooldown();
